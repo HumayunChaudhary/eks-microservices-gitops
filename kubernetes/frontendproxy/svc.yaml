@@ -19,5 +19,4 @@ spec:
       name: tcp-service
       targetPort: 8080
   selector:
-    
     opentelemetry.io/name: opentelemetry-demo-frontendproxy

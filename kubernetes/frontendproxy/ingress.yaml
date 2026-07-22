@@ -5,10 +5,13 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:462052762451:certificate/bf6f2f2a-183c-4f17-93f2-4808640460aa
 spec:
   ingressClassName: alb
   rules:
-    - host: example.com
+    - host: thyson.online 
       http:
         paths:
           - path: "/"
