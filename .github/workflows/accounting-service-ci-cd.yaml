@@ -9,5 +9,51 @@ on:
       - "kubernetes/accounting/**"
 
 jobs:
-  
+  gitleaks-scan:
+    name: Gitleaks scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+      - name: Run Gitleaks scan
+        run: |
+          docker run --rm \
+          -v "${{ github.workspace }}:/repo" \
+          zricethezav/gitleaks:latest \
+          detect \
+          --source=/repo/src/accounting/** \
+          --report-format=json \
+          --report-path=/repo/gitleaks-report.json \
+          --redact \
+          --exit-code 0
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+          if-no-files-found: warn
+
+  checkov-k8s:
+    name: Checkov scan for K8s manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: action/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Checkov
+        run: pip install checkov
+      - name: Run Checkov scan
+        run: |
+          checkov -d ./kubernetes/accounting/ \
+          --framework kubernetes \
+          --output json > checkov-k8s-report.json || true
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-k8s-report
+          path: checkov-k8s-report.json
+          if-no-files-found: warn
     
