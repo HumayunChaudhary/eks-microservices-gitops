@@ -1,0 +1,13 @@
+name: Payment service CI/CD 
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/accounting/**"
+      - "kubernetes/accounting/**"
+
+jobs:
+  
+    
