@@ -1,4 +1,4 @@
-name: Payment service CI/CD 
+name: Accounting service CI/CD 
 
 on:
   push:
