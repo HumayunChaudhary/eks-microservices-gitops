@@ -57,4 +57,18 @@ jobs:
           name: checkov-k8s-report
           path: checkov-k8s-report.json
           if-no-files-found: warn
-    
+
+  docker-build:
+    name: Build docker image
+    runs-on: ubuntu-latest
+    needs:
+      - checkov-k8s
+      - gitleaks-scan
+    steps:
+      - name: Checkout source code
+        uses: actions/action@v4
+      - name: Build docker image
+        run: |
+          docker build -t accounting-svc:${{ github.sha }} ./src/accounting/
+      - name: Verify image creation
+        run: docker images
