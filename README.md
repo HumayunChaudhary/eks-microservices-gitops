@@ -505,7 +505,7 @@ kubectl get nodes
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/eks-microservices-gitops.git
+git clone https://github.com/HumayunChaudhary/eks-microservices-gitops.git
 cd eks-microservices-gitops
 ```
 
