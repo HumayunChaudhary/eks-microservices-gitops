@@ -32,7 +32,7 @@ An **Argo CD ApplicationSet with a Git Directory Generator** is used to automati
                     │                           │
                     ▼                           ▼
           ┌──────────────────┐         ┌──────────────────┐
-          │  GitHub Actions   │         │     Argo CD      │
+          │  GitHub Actions  │         │     Argo CD      │
           │                  │         │                  │
           │ Gitleaks         │         │  ApplicationSet  │
           │ Checkov          │         │  Git Generator   │
