@@ -1,141 +1,738 @@
-**Note:** This project is a fork of `opentelemetry-demo`. Thanks to the team and contributors for opensourcing this wonderful demo project. Definitely one of the best on internet.
+# Amazon EKS Microservices GitOps with Argo CD
 
-<!-- markdownlint-disable-next-line -->
-# <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45"> OpenTelemetry Demo
+## Overview
 
-[![Slack](https://img.shields.io/badge/slack-@cncf/otel/demo-brightgreen.svg?logo=slack)](https://cloud-native.slack.com/archives/C03B4CWV4DA)
-[![Version](https://img.shields.io/github/v/release/open-telemetry/opentelemetry-demo?color=blueviolet)](https://github.com/open-telemetry/opentelemetry-demo/releases)
-[![Commits](https://img.shields.io/github/commits-since/open-telemetry/opentelemetry-demo/latest?color=ff69b4&include_prereleases)](https://github.com/open-telemetry/opentelemetry-demo/graphs/commit-activity)
-[![Downloads](https://img.shields.io/docker/pulls/otel/demo)](https://hub.docker.com/r/otel/demo)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?color=red)](https://github.com/open-telemetry/opentelemetry-demo/blob/main/LICENSE)
-[![Integration Tests](https://github.com/open-telemetry/opentelemetry-demo/actions/workflows/run-integration-tests.yml/badge.svg)](https://github.com/open-telemetry/opentelemetry-demo/actions/workflows/run-integration-tests.yml)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/opentelemetry-demo)](https://artifacthub.io/packages/helm/opentelemetry-helm/opentelemetry-demo)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9247/badge)](https://www.bestpractices.dev/en/projects/9247)
+This project demonstrates the deployment of a **cloud-native microservices application on Amazon EKS using Kubernetes and GitOps principles**.
 
-## Welcome to the OpenTelemetry Astronomy Shop Demo
+The project uses **GitHub, GitHub Actions, Docker, Docker Hub, Kubernetes, Amazon EKS, and Argo CD** to implement an automated CI/CD and GitOps workflow.
 
-This repository contains the OpenTelemetry Astronomy Shop, a microservice-based
-distributed system intended to illustrate the implementation of OpenTelemetry in
-a near real-world environment.
+GitHub acts as the source of truth for both application source code and Kubernetes desired-state configuration. **GitHub Actions** performs the CI process by running security checks, building container images, scanning them for vulnerabilities, and pushing them to Docker Hub.
 
-Our goals are threefold:
+For continuous delivery, **Argo CD** monitors the Kubernetes manifests stored in Git and continuously reconciles the desired state with the actual state running in Amazon EKS.
 
-- Provide a realistic example of a distributed system that can be used to
-  demonstrate OpenTelemetry instrumentation and observability.
-- Build a base for vendors, tooling authors, and others to extend and
-  demonstrate their OpenTelemetry integrations.
-- Create a living example for OpenTelemetry contributors to use for testing new
-  versions of the API, SDK, and other components or enhancements.
+An **Argo CD ApplicationSet with a Git Directory Generator** is used to automatically generate individual Argo CD Applications for the microservices, eliminating the need to manually create an Application manifest for every service.
 
-We've already made [huge
-progress](https://github.com/open-telemetry/opentelemetry-demo/blob/main/CHANGELOG.md),
-and development is ongoing. We hope to represent the full feature set of
-OpenTelemetry across its languages in the future.
+---
 
-If you'd like to help (**which we would love**), check out our [contributing
-guidance](./CONTRIBUTING.md).
+## Architecture
 
-If you'd like to extend this demo or maintain a fork of it, read our
-[fork guidance](https://opentelemetry.io/docs/demo/forking/).
+```text
+                              Developer
+                                  │
+                                  │ git push
+                                  ▼
+                         ┌──────────────────┐
+                         │      GitHub      │
+                         │                  │
+                         │ Source Code      │
+                         │ K8s Manifests    │
+                         └────────┬─────────┘
+                                  │
+                    ┌─────────────┴─────────────┐
+                    │                           │
+                    ▼                           ▼
+          ┌──────────────────┐         ┌──────────────────┐
+          │  GitHub Actions   │         │     Argo CD      │
+          │                  │         │                  │
+          │ Gitleaks         │         │  ApplicationSet  │
+          │ Checkov          │         │  Git Generator   │
+          │ Docker Build     │         └────────┬─────────┘
+          │ Trivy            │                  │
+          │ Docker Push      │                  │
+          └────────┬─────────┘                  │
+                   │                            │
+                   ▼                            │
+          ┌──────────────────┐                  │
+          │    Docker Hub    │                  │
+          │                  │                  │
+          │ Container Images │                  │
+          └────────┬─────────┘                  │
+                   │                            │
+                   │                            │
+                   └──────────────┬─────────────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │    Amazon EKS    │
+                         │                  │
+                         │    Kubernetes    │
+                         │     Cluster      │
+                         └────────┬─────────┘
+                                  │
+                    ┌─────────────┴─────────────┐
+                    │                           │
+                    ▼                           ▼
+             Microservices              Supporting Services
+                    │
+                    ▼
+              Application
+               Workloads
+```
 
-## Quick start
+---
 
-You can be up and running with the demo in a few minutes. Check out the docs for
-your preferred deployment method:
+## Technology Stack
 
-- [Docker](https://opentelemetry.io/docs/demo/docker_deployment/)
-- [Kubernetes](https://opentelemetry.io/docs/demo/kubernetes_deployment/)
+| Category                | Technologies           |
+| ----------------------- | ---------------------- |
+| Cloud                   | Amazon Web Services    |
+| Container Orchestration | Amazon EKS, Kubernetes |
+| CI/CD                   | GitHub Actions         |
+| Containerization        | Docker                 |
+| Container Registry      | Docker Hub             |
+| GitOps                  | Argo CD                |
+| Application Management  | Argo CD ApplicationSet |
+| Secret Scanning         | Gitleaks               |
+| Kubernetes Security     | Checkov                |
+| Container Security      | Trivy                  |
+| Source Control          | GitHub                 |
 
-## Documentation
+---
 
-For detailed documentation, see [Demo Documentation][docs]. If you're curious
-about a specific feature, the [docs landing page][docs] can point you in the
-right direction.
+## Repository Structure
 
-## Demos featuring the Astronomy Shop
+The repository separates application source code from Kubernetes deployment configuration and GitOps configuration.
 
-We welcome any vendor to fork the project to demonstrate their services and
-adding a link below. The community is committed to maintaining the project and
-keeping it up to date for you.
+```text
+eks-microservices-gitops/
+│
+├── src/
+│   ├── accounting/
+│   ├── add/
+│   ├── cart/
+│   ├── checkout/
+│   ├── currency/
+│   ├── email/
+│   ├── flagd-ui/
+│   ├── flagd/
+│   ├── fraud-detection/
+│   ├── frontend-proxy/
+│   ├── frontend/
+│   ├── grafana/
+│   ├── image-provider/
+│   ├── jaeger/
+│   ├── kafka/
+│   ├── load-generator/
+│   ├── opensearch/
+│   ├── otel-collector/
+│   ├── payment/
+│   ├── postgres/
+│   ├── product-catalog/
+│   ├── prometheus/
+│   ├── quote/
+│   ├── react-native-app/
+│   ├── recommendation/
+│   └── shipping/
+│
+├── kubernetes/
+│   ├── accounting/
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   ├── add/
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   ├── cart/
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   ├── checkout/
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   ├── ...
+│   └── shipping/
+│       ├── deployment.yaml
+│       └── service.yaml
+│
+└── argocd/
+    └── applicationset.yaml
+```
 
-|                           |                |                                  |
-|---------------------------|----------------|----------------------------------|
-| [AlibabaCloud LogService] | [Elastic]      | [OpenSearch]                     |
-| [AppDynamics]             | [Google Cloud] | [Sentry]                         |
-| [Aspecto]                 | [Grafana Labs] | [ServiceNow Cloud Observability] |
-| [Axiom]                   | [Guance]       | [Splunk]                         |
-| [Axoflow]                 | [Honeycomb.io] | [Sumo Logic]                     |
-| [Azure Data Explorer]     | [Instana]      | [TelemetryHub]                   |
-| [Coralogix]               | [Kloudfuse]    | [Teletrace]                      |
-| [Dash0]                   | [Liatrio]      | [Tracetest]                      |
-| [Datadog]                 | [Logz.io]      | [Uptrace]                        |
-| [Dynatrace]               | [New Relic]    |                                  |
+### Directory Responsibilities
 
-## Contributing
+**`src/`**
 
-To get involved with the project see our [CONTRIBUTING](CONTRIBUTING.md)
-documentation. Our [SIG Calls](CONTRIBUTING.md#join-a-sig-call) are every other
-Monday at 8:30 AM PST and anyone is welcome.
+Contains the source code and Docker build context for the individual services.
 
-## Project leadership
+**`kubernetes/`**
 
-[Maintainers](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer)
-([@open-telemetry/demo-maintainers](https://github.com/orgs/open-telemetry/teams/demo-maintainers)):
+Contains the Kubernetes desired-state configuration. Each service has its own directory containing Kubernetes manifests.
 
-- [Juliano Costa](https://github.com/julianocosta89), Datadog
-- [Mikko Viitanen](https://github.com/mviitane), Dynatrace
-- [Pierre Tessier](https://github.com/puckpuck), Honeycomb
+**`argocd/`**
 
-[Approvers](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver)
-([@open-telemetry/demo-approvers](https://github.com/orgs/open-telemetry/teams/demo-approvers)):
+Contains the Argo CD ApplicationSet configuration used to automatically generate Argo CD Applications.
 
-- [Cedric Ziel](https://github.com/cedricziel) Grafana Labs
-- [Penghan Wang](https://github.com/wph95), AppDynamics
-- [Reiley Yang](https://github.com/reyang), Microsoft
-- [Roger Coll](https://github.com/rogercoll), Elastic
-- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
+---
 
-Emeritus:
+## CI/CD Pipeline
 
-- [Austin Parker](https://github.com/austinlparker)
-- [Carter Socha](https://github.com/cartersocha)
-- [Michael Maxwell](https://github.com/mic-max)
-- [Morgan McLean](https://github.com/mtwo)
+GitHub Actions is used to automate the Continuous Integration process for the individual services.
 
-### Thanks to all the people who have contributed
+The pipeline performs security scanning, container image creation, vulnerability scanning, image publishing, and Kubernetes manifest updates.
 
-[![contributors](https://contributors-img.web.app/image?repo=open-telemetry/opentelemetry-demo)](https://github.com/open-telemetry/opentelemetry-demo/graphs/contributors)
+### Pipeline Flow
 
-[docs]: https://opentelemetry.io/docs/demo/
+```text
+Developer
+    │
+    │ git push
+    ▼
+GitHub
+    │
+    ▼
+GitHub Actions
+    │
+    ├── Gitleaks
+    │      │
+    │      └── Secret scanning
+    │
+    ├── Checkov
+    │      │
+    │      └── Kubernetes security scanning
+    │
+    ├── Docker Build
+    │      │
+    │      └── Build image using Git SHA
+    │
+    ├── Trivy
+    │      │
+    │      └── Container vulnerability scanning
+    │
+    ├── Docker Hub
+    │      │
+    │      └── Push image
+    │
+    └── Update Kubernetes Manifest
+           │
+           └── Commit & push image tag
+                    │
+                    ▼
+                  GitHub
+```
 
-<!-- Links for Demos featuring the Astronomy Shop section -->
+### Workflow Trigger
 
-[AlibabaCloud LogService]: https://github.com/aliyun-sls/opentelemetry-demo
-[AppDynamics]: https://www.appdynamics.com/blog/cloud/how-to-observe-opentelemetry-demo-app-in-appdynamics-cloud/
-[Aspecto]: https://github.com/aspecto-io/opentelemetry-demo
-[Axiom]: https://play.axiom.co/axiom-play-qf1k/dashboards/otel.traces.otel-demo-traces
-[Axoflow]: https://axoflow.com/opentelemetry-support-in-more-detail-in-axosyslog-and-syslog-ng/
-[Azure Data Explorer]: https://github.com/Azure/Azure-kusto-opentelemetry-demo
-[Coralogix]: https://coralogix.com/blog/configure-otel-demo-send-telemetry-data-coralogix
-[Dash0]: https://github.com/dash0hq/opentelemetry-demo
-[Datadog]: https://docs.datadoghq.com/opentelemetry/guide/otel_demo_to_datadog
-[Dynatrace]: https://www.dynatrace.com/news/blog/opentelemetry-demo-application-with-dynatrace/
-[Elastic]: https://github.com/elastic/opentelemetry-demo
-[Google Cloud]: https://github.com/GoogleCloudPlatform/opentelemetry-demo
-[Grafana Labs]: https://github.com/grafana/opentelemetry-demo
-[Guance]: https://github.com/GuanceCloud/opentelemetry-demo
-[Honeycomb.io]: https://github.com/honeycombio/opentelemetry-demo
-[Instana]: https://github.com/instana/opentelemetry-demo
-[Kloudfuse]: https://github.com/kloudfuse/opentelemetry-demo
-[Liatrio]: https://github.com/liatrio/opentelemetry-demo
-[Logz.io]: https://logz.io/learn/how-to-run-opentelemetry-demo-with-logz-io/
-[New Relic]: https://github.com/newrelic/opentelemetry-demo
-[OpenSearch]: https://github.com/opensearch-project/opentelemetry-demo
-[Sentry]: https://github.com/getsentry/opentelemetry-demo
-[ServiceNow Cloud Observability]: https://docs.lightstep.com/otel/quick-start-operator#send-data-from-the-opentelemetry-demo
-[Splunk]: https://github.com/signalfx/opentelemetry-demo
-[Sumo Logic]: https://www.sumologic.com/blog/common-opentelemetry-demo-application/
-[TelemetryHub]: https://github.com/TelemetryHub/opentelemetry-demo/tree/telemetryhub-backend
-[Teletrace]: https://github.com/teletrace/opentelemetry-demo
-[Tracetest]: https://github.com/kubeshop/opentelemetry-demo
-[Uptrace]: https://github.com/uptrace/uptrace/tree/master/example/opentelemetry-demo
+Each service pipeline is configured to run when changes affecting that service are pushed to the `main` branch.
+
+For example, the Accounting service workflow monitors:
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/accounting/**"
+      - "kubernetes/accounting/**"
+```
+
+This prevents unrelated service changes from unnecessarily triggering the Accounting pipeline.
+
+The workflow can also be started manually using:
+
+```yaml
+workflow_dispatch:
+```
+
+---
+
+## CI Security
+
+The pipeline integrates multiple security tools into the CI process.
+
+### Gitleaks
+
+**Gitleaks** scans the application source code for accidentally committed secrets such as credentials, API keys, and tokens.
+
+```text
+Source Code
+     │
+     ▼
+ Gitleaks
+     │
+     ▼
+Secret Detection Report
+```
+
+### Checkov
+
+**Checkov** scans Kubernetes manifests against security and configuration best practices.
+
+```text
+Kubernetes Manifests
+        │
+        ▼
+     Checkov
+        │
+        ▼
+Security / Compliance Report
+```
+
+### Trivy
+
+**Trivy** scans the newly built Docker image for known vulnerabilities, with the pipeline configured to report `HIGH` and `CRITICAL` severity findings.
+
+```text
+Docker Image
+     │
+     ▼
+   Trivy
+     │
+     ▼
+Vulnerability Report
+```
+
+Reports generated by the security tools are uploaded as GitHub Actions artifacts.
+
+---
+
+## Docker Image Build and Publishing
+
+The Docker image is built using the Git commit SHA as its tag:
+
+```bash
+docker build \
+  -t accounting-svc:${{ github.sha }} \
+  -f src/accounting/Dockerfile .
+```
+
+The image is then tagged for Docker Hub:
+
+```text
+<DOCKER_USERNAME>/accounting-svc:<commit-sha>
+```
+
+and pushed to the registry:
+
+```bash
+docker push \
+  ${{ secrets.DOCKER_USERNAME }}/accounting-svc:${{ github.sha }}
+```
+
+Using the Git commit SHA provides traceability between the source-code revision and the container image.
+
+For example:
+
+```text
+Git Commit
+    │
+    │ abc123...
+    ▼
+Docker Image
+    │
+    └── accounting-svc:abc123...
+```
+
+---
+
+## Kubernetes Manifest Update
+
+After successfully building and pushing the image, GitHub Actions updates the Kubernetes Deployment manifest with the new image tag.
+
+For example:
+
+```yaml
+image: <DOCKER_USERNAME>/accounting-svc:<commit-sha>
+```
+
+The workflow then commits the updated manifest back to the `main` branch.
+
+This step is important because the Kubernetes manifest stored in Git represents the **desired state** of the application.
+
+The workflow therefore follows:
+
+```text
+Build Image
+     │
+     ▼
+Push Image to Docker Hub
+     │
+     ▼
+Update Kubernetes Manifest
+     │
+     ▼
+Commit & Push to GitHub
+     │
+     ▼
+Git becomes updated desired state
+```
+
+GitHub Actions does **not** directly deploy the new version using `kubectl`.
+
+Instead, it updates Git, and Argo CD handles the deployment.
+
+---
+
+# GitOps Workflow
+
+Argo CD provides the Continuous Delivery and GitOps portion of the project.
+
+GitHub acts as the **source of truth**, while Argo CD continuously compares the desired state stored in Git with the live state of the Kubernetes cluster.
+
+```text
+                   GitHub
+                Desired State
+                     │
+                     │
+                     ▼
+                  Argo CD
+                     │
+              Compare / Reconcile
+                     │
+                     ▼
+               Amazon EKS
+                Live State
+```
+
+When a Kubernetes manifest changes in Git, Argo CD detects the change and synchronizes the Kubernetes cluster according to the configured synchronization policy.
+
+### End-to-End GitOps Flow
+
+```text
+Developer
+    │
+    ▼
+GitHub
+    │
+    ▼
+GitHub Actions
+    │
+    ├── Security Scans
+    ├── Docker Build
+    ├── Trivy Scan
+    └── Push Image
+            │
+            ▼
+        Docker Hub
+            │
+            ▼
+    Update K8s Manifest
+            │
+            ▼
+         GitHub
+            │
+            ▼
+         Argo CD
+            │
+            ▼
+      ApplicationSet
+            │
+            ▼
+    Argo CD Application
+            │
+            ▼
+        Amazon EKS
+```
+
+---
+
+# Argo CD ApplicationSet
+
+The project uses **Argo CD ApplicationSet** to simplify the management of multiple microservices.
+
+A **Git Directory Generator** scans the `kubernetes/` directory and discovers the individual service directories.
+
+For example:
+
+```text
+kubernetes/
+├── accounting/
+├── add/
+├── cart/
+├── checkout/
+├── payment/
+├── product-catalog/
+├── recommendation/
+└── shipping/
+```
+
+ApplicationSet uses a common template to automatically generate an individual Argo CD Application for each discovered directory.
+
+```text
+Git Directory Generator
+          │
+          ▼
+     ApplicationSet
+          │
+          ├── accounting Application
+          ├── add Application
+          ├── cart Application
+          ├── checkout Application
+          ├── payment Application
+          ├── product-catalog Application
+          ├── recommendation Application
+          └── shipping Application
+```
+
+This eliminates the need to manually create and maintain a separate Argo CD Application manifest for every service.
+
+It also makes the GitOps architecture easier to scale: when a new service directory is added under `kubernetes/`, the ApplicationSet can automatically discover it and generate the corresponding Argo CD Application.
+
+---
+
+# Prerequisites
+
+Before deploying the project, ensure the following tools and resources are available:
+
+* AWS account
+* Amazon EKS cluster
+* AWS CLI
+* `kubectl`
+* Helm
+* Git
+* Docker
+* GitHub repository
+* Docker Hub account
+* Argo CD installed in the EKS cluster
+
+Configure AWS credentials and verify access to the EKS cluster:
+
+```bash
+aws sts get-caller-identity
+```
+
+Configure `kubectl`:
+
+```bash
+aws eks update-kubeconfig \
+  --region <AWS_REGION> \
+  --name <EKS_CLUSTER_NAME>
+```
+
+Verify cluster access:
+
+```bash
+kubectl get nodes
+```
+
+---
+
+# Deployment
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/<YOUR_USERNAME>/eks-microservices-gitops.git
+cd eks-microservices-gitops
+```
+
+## 2. Configure GitHub Secrets
+
+The GitHub Actions workflows require Docker Hub credentials.
+
+Configure the following GitHub repository secrets:
+
+```text
+DOCKER_USERNAME
+DOCKER_TOKEN
+```
+
+The workflow uses these credentials to authenticate with Docker Hub and push container images.
+
+## 3. Install Argo CD
+
+If Argo CD is not already installed in the EKS cluster, install it in the `argocd` namespace.
+
+```bash
+kubectl create namespace argocd
+```
+
+Install Argo CD using Helm:
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+
+helm install argocd argo/argo-cd \
+  -n argocd
+```
+
+Verify the installation:
+
+```bash
+kubectl get pods -n argocd
+```
+
+## 4. Apply the ApplicationSet
+
+Once Argo CD is running, apply the ApplicationSet:
+
+```bash
+kubectl apply -f argocd/applicationset.yaml
+```
+
+Verify the ApplicationSet:
+
+```bash
+kubectl get applicationset -n argocd
+```
+
+Verify generated Applications:
+
+```bash
+kubectl get applications -n argocd
+```
+
+The ApplicationSet should automatically generate Applications based on the directories under:
+
+```text
+kubernetes/
+```
+
+---
+
+# Verification
+
+Verify the generated Argo CD Applications:
+
+```bash
+kubectl get applications -n argocd
+```
+
+Verify the Kubernetes workloads:
+
+```bash
+kubectl get deployments -A
+```
+
+Verify the running pods:
+
+```bash
+kubectl get pods -A
+```
+
+Verify Kubernetes Services:
+
+```bash
+kubectl get services -A
+```
+
+For a specific service:
+
+```bash
+kubectl get pods -n default
+kubectl get deployment <deployment-name> -n default
+kubectl get service <service-name> -n default
+```
+
+---
+
+# GitOps Benefits
+
+This implementation provides several benefits over manually deploying Kubernetes manifests:
+
+### Single Source of Truth
+
+Git stores the desired Kubernetes configuration, providing a version-controlled and auditable deployment history.
+
+### Automated Deployment
+
+Argo CD can automatically synchronize changes from Git into the Kubernetes cluster.
+
+### Self-Healing
+
+Argo CD can detect configuration drift and restore resources to the desired state defined in Git.
+
+### Automated Pruning
+
+Resources removed from the desired state can be automatically removed from the cluster when pruning is enabled.
+
+### Scalable Application Management
+
+ApplicationSet eliminates repetitive Argo CD Application manifests by dynamically generating Applications from service directories.
+
+### Traceable Container Versions
+
+Docker images are tagged with Git commit SHAs, making it possible to trace a running image back to the source-code revision that produced it.
+
+### Security Integrated into CI
+
+Gitleaks, Checkov, and Trivy integrate security checks directly into the CI pipeline.
+
+---
+
+# CI/CD vs GitOps Responsibilities
+
+The architecture deliberately separates CI responsibilities from CD responsibilities.
+
+| Component      | Responsibility                           |
+| -------------- | ---------------------------------------- |
+| GitHub         | Source code and Kubernetes desired state |
+| GitHub Actions | CI automation and security scanning      |
+| Gitleaks       | Secret detection                         |
+| Checkov        | Kubernetes security scanning             |
+| Docker         | Container image creation                 |
+| Trivy          | Container vulnerability scanning         |
+| Docker Hub     | Container image registry                 |
+| Argo CD        | GitOps-based continuous delivery         |
+| ApplicationSet | Dynamic Argo CD Application generation   |
+| Amazon EKS     | Kubernetes workload execution            |
+
+The overall responsibility model is:
+
+```text
+                  CI
+                   │
+                   ▼
+             GitHub Actions
+                   │
+          Build + Scan + Push
+                   │
+                   ▼
+              Docker Hub
+                   │
+                   │
+                   │
+             GitOps / CD
+                   │
+                   ▼
+                GitHub
+                   │
+                   ▼
+                Argo CD
+                   │
+                   ▼
+              Amazon EKS
+```
+
+---
+
+# Future Improvements
+
+Potential improvements to the project include:
+
+* Introduce separate `dev`, `staging`, and `production` environments.
+* Use Kustomize or Helm for environment-specific configuration.
+* Implement progressive delivery using Argo Rollouts.
+* Introduce blue-green or canary deployment strategies.
+* Add image signing and verification.
+* Implement stronger policy enforcement using Kubernetes admission policies.
+* Integrate automated rollback strategies.
+* Introduce centralized secrets management using AWS Secrets Manager and External Secrets.
+* Add automated testing stages before container image publishing.
+
+---
+
+# Conclusion
+
+This project demonstrates a complete modern DevOps workflow for deploying a microservices application on Amazon EKS.
+
+The implementation combines:
+
+```text
+GitHub
+   +
+GitHub Actions
+   +
+Docker
+   +
+Docker Hub
+   +
+Kubernetes
+   +
+Amazon EKS
+   +
+Argo CD
+   +
+ApplicationSet
+```
+
+The resulting architecture provides an automated and scalable deployment model where **GitHub defines the desired state, GitHub Actions builds and secures application artifacts, Docker Hub stores container images, and Argo CD continuously reconciles Kubernetes workloads running on Amazon EKS with the state defined in Git.**
