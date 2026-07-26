@@ -226,11 +226,6 @@ on:
 
 This prevents unrelated service changes from unnecessarily triggering the Accounting pipeline.
 
-The workflow can also be started manually using:
-
-```yaml
-workflow_dispatch:
-```
 
 ---
 
