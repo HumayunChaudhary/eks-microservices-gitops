@@ -33,7 +33,7 @@ spec:
 
       containers:
         - name: accountingservice
-          image: humayun27/accounting-svc:2e60bad5ee3555f4c1f0de43645d85ba20fa71e9
+          image: humayun27/accounting-svc:e97644170813cecee4b7aa7e12c9940fa5adccfd
           imagePullPolicy: IfNotPresent
 
           env:
@@ -70,6 +70,6 @@ spec:
             - >-
               until nc -z -v -w30 opentelemetry-demo-kafka 9092;
               do echo waiting for kafka; sleep 2; done;
-          image: humayun27/accounting-svc:2e60bad5ee3555f4c1f0de43645d85ba20fa71e9
+          image: humayun27/accounting-svc:e97644170813cecee4b7aa7e12c9940fa5adccfd
 
       volumes: []
