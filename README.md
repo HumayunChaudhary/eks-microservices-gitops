@@ -456,6 +456,8 @@ Git Directory Generator
           ├── recommendation Application
           └── shipping Application
 ```
+<img width="1574" height="755" alt="image" src="https://github.com/user-attachments/assets/c387778b-a9c5-40aa-b59b-c34b91bda297" />
+
 
 This eliminates the need to manually create and maintain a separate Argo CD Application manifest for every service.
 
